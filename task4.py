@@ -1,43 +1,46 @@
 import torch
 import torch.nn.functional as F
 
-
-def scaled_dot_product_attention(Q, K, V, mask=None):
+def scaled_dot_product_attention(Q, K, V, d_k, dropout=0.0):
     """
-    计算缩放点积注意力。
-    :param Q: 查询 (query)，形状为 (batch_size, num_heads, seq_length, d_k)
-    :param K: 键 (key)，形状为 (batch_size, num_heads, seq_length, d_k)
-    :param V: 值 (value)，形状为 (batch_size, num_heads, seq_length, d_v)
-    :param mask: 可选的掩码，用于屏蔽某些位置的注意力权重
-    :return: 多头注意力的输出，形状为 (batch_size, num_heads, seq_length, d_v)
+    计算缩放点积注意力分数。
+    Q: 查询矩阵 (batch_size, num_heads, seq_length, d_k)
+    K: 键矩阵 (batch_size, num_heads, seq_length, d_k)
+    V: 值矩阵 (batch_size, num_heads, seq_length, d_v)
+    d_k: 键和查询的维度
+    dropout: 可选，dropout比率
     """
-    d_k = torch.tensor(Q.size()[-1], dtype=torch.float32)  # 计算键的维度
-    scores = torch.matmul(Q, K.transpose(-2, -1)) / torch.sqrt(d_k)  # 计算缩放点积
-
-    if mask is not None:
-        scores = scores.masked_fill(mask == 0, float('-inf'))  # 使用掩码屏蔽某些分数
-
-    attention_weights = F.softmax(scores, dim=-1)  # 应用Softmax函数计算注意力权重
-
-    return torch.matmul(attention_weights, V)  # 计算加权和
-
+    batch_size = Q.size(0)
+    
+    # 计算点积并缩放
+    attention_scores = torch.matmul(Q, K.transpose(-2, -1)) / (d_k ** 0.5)
+    
+    # 应用Softmax
+    attention_probs = F.softmax(attention_scores, dim=-1)
+    
+    # 应用dropout
+    if dropout > 0:
+        attention_probs = F.dropout(attention_probs, p=dropout, dim=-1)
+    
+    # 计算加权和
+    attention_output = torch.matmul(attention_probs, V)
+    
+    return attention_output
 
 # 示例：计算一个随机矩阵的注意力权重
 batch_size = 2
-num_heads = 4
-seq_length = 10
-d_k = 64
-d_v = 64
+num_heads = 2
+seq_length = 4
+d_k = 3
+d_v = 3
 
-# 创建随机的查询、键和值矩阵
+# 创建随机矩阵
 Q = torch.rand(batch_size, num_heads, seq_length, d_k)
 K = torch.rand(batch_size, num_heads, seq_length, d_k)
 V = torch.rand(batch_size, num_heads, seq_length, d_v)
 
-# 假设我们不需要掩码
-mask = None
-
 # 计算注意力权重
-output = scaled_dot_product_attention(Q, K, V, mask=mask)
+attention_output = scaled_dot_product_attention(Q, K, V, d_k)
 
-print(output)  # 输出多头注意力的输出
+print("注意力权重 (输出):")
+print(attention_output)
