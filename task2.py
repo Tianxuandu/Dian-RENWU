@@ -9,16 +9,15 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.fc1 = nn.Linear(28 * 28, 128)  # 输入层到隐藏层
-        self.fc2 = nn.Linear(128, 64)    # 隐藏层到另一个隐藏层
-        self.fc3 = nn.Linear(64, 10)     # 输出层
+        self.linear1 = nn.Linear(28 * 28, 128)  # 输入层到隐藏层
+        self.linear2 = nn.Linear(128, 64)    # 隐藏层到另一个隐藏层
+        self.linear3 = nn.Linear(64, 10)     # 输出层
 
     def forward(self, x):
         x = x.view(-1, 28 * 28)  # 展平图像
-        x = torch.relu(self.fc1(x))
-        x = torch.relu(self.fc2(x))
-        x = torch.log_softmax(self.fc3(x), dim=1)
-        return x
+        x = torch.relu(self.linear1(x))
+        x = torch.relu(self.linear2(x))
+        return self.linear3(x)
 
 # 加载和预处理数据
 transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
